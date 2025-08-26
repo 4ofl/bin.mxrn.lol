@@ -16,9 +16,6 @@ function ApiKeyModal({ show, onClose, onConfirm, loading }) {
 	return (
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 			<div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-				{/* <h2 className="text-xl font-bold mb-4 text-gray-100">
-					API Key Required
-				</h2> */}
 				<p className="text-gray-300 mb-4">
 					enter your API key to publish this paste:
 				</p>
