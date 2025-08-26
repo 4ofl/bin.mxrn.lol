@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 		options.ex = parseInt(expiration);
 	} else {
 		// Default to 24 hours if no expiration is set
-		options.ex = 60 * 60 * 24;
+		options.ex = -1;
 	}
 
 	try {
