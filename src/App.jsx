@@ -8,35 +8,107 @@ import {
 } from "react-router-dom";
 import axios from "axios";
 
+function ApiKeyModal({ show, onClose, onConfirm, loading }) {
+	const [apiKey, setApiKey] = useState("");
+
+	if (!show) return null;
+
+	return (
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+			<div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+				{/* <h2 className="text-xl font-bold mb-4 text-gray-100">
+					API Key Required
+				</h2> */}
+				<p className="text-gray-300 mb-4">
+					enter your API key to publish this paste:
+				</p>
+				<input
+					type="password"
+					className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+					value={apiKey}
+					onChange={(e) => setApiKey(e.target.value)}
+					placeholder="fatbababalz"
+				/>
+				<div className="flex justify-end mt-6 space-x-3">
+					<button
+						onClick={onClose}
+						className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition"
+					>
+						Cancel
+					</button>
+					<button
+						onClick={() => onConfirm(apiKey)}
+						disabled={loading || !apiKey}
+						className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition disabled:opacity-50"
+					>
+						{loading ? "Verifying..." : "Publish"}
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
 function Home() {
 	const [text, setText] = useState("");
 	const [title, setTitle] = useState("");
 	const [syntax, setSyntax] = useState("text");
 	const [expiration, setExpiration] = useState("86400");
 	const [loading, setLoading] = useState(false);
+	const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 	const navigate = useNavigate();
 
-	const savePaste = async () => {
+	const savePaste = async (apiKey) => {
 		if (!text) return;
 		setLoading(true);
+
 		try {
-			const { data } = await axios.post("/api/save", {
-				text,
-				title: title || undefined,
-				syntax: syntax !== "text" ? syntax : undefined,
-				expiration: expiration !== "never" ? expiration : undefined,
-			});
+			const { data } = await axios.post(
+				"/api/save",
+				{
+					text,
+					title: title || undefined,
+					syntax: syntax !== "text" ? syntax : undefined,
+					expiration: expiration !== "never" ? expiration : undefined,
+				},
+				{
+					headers: {
+						"X-API-Key": apiKey,
+					},
+				}
+			);
+
 			navigate(`/${data.id}`);
 		} catch (err) {
 			console.error(err);
-			alert("Error saving paste. Please try again.");
+			if (err.response?.status === 401) {
+				alert("Invalid API key. Please try again.");
+			} else {
+				alert("Error saving paste. Please try again.");
+			}
 		} finally {
 			setLoading(false);
 		}
 	};
 
+	const handlePublishClick = () => {
+		setShowApiKeyModal(true);
+	};
+
+	const handleApiKeyConfirm = (apiKey) => {
+		setShowApiKeyModal(false);
+		savePaste(apiKey);
+	};
+
 	return (
 		<div className="flex flex-col min-h-screen bg-gray-900 text-gray-100">
+			<ApiKeyModal
+				show={showApiKeyModal}
+				onClose={() => setShowApiKeyModal(false)}
+				onConfirm={handleApiKeyConfirm}
+				loading={loading}
+			/>
+
 			<main className="flex-grow flex flex-col max-w-4xl mx-auto w-full p-4">
 				<div className="flex flex-col bg-gray-800 rounded-lg shadow-lg p-4 flex-grow">
 					<input
@@ -46,14 +118,12 @@ function Home() {
 						onChange={(e) => setTitle(e.target.value)}
 						placeholder="paste title (optional)"
 					/>
-
 					<textarea
 						className="flex-grow w-full p-3 bg-gray-700 border border-gray-600 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm mb-3"
 						value={text}
 						onChange={(e) => setText(e.target.value)}
 						placeholder="paste your content here..."
 					/>
-
 					<div className="grid grid-cols-2 gap-3 mb-3">
 						<select
 							className="p-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -69,7 +139,6 @@ function Home() {
 							<option value="php">PHP</option>
 							<option value="sql">SQL</option>
 						</select>
-
 						<select
 							className="p-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
 							value={expiration}
@@ -82,7 +151,6 @@ function Home() {
 							<option value="never">Never</option>
 						</select>
 					</div>
-
 					<div className="flex justify-between items-center">
 						<div className="text-xs text-gray-400">
 							{text.length} chars •{" "}
@@ -90,7 +158,7 @@ function Home() {
 						</div>
 						<button
 							className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition disabled:opacity-50"
-							onClick={savePaste}
+							onClick={handlePublishClick}
 							disabled={loading || !text}
 						>
 							{loading ? "publishing..." : "publish"}
@@ -98,7 +166,6 @@ function Home() {
 					</div>
 				</div>
 			</main>
-
 			<footer className="bg-gray-800 py-3 text-center text-gray-400 text-xs">
 				scab &copy; {new Date().getFullYear()} - bin.mxrn.lol
 			</footer>
